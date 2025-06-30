@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GDPR Email Assistant – Setup Guide</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1.5rem;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1, h2 {
+      color: #2c3e50;
+    }
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.95em;
+    }
+    .section {
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>GDPR Email Assistant – Setup & Usage Guide</h1>
+
+  <div class="section">
+    <h2>✅ Step 1: Create Your Google Sheet</h2>
+    <ul>
+      <li>Open a new Google Sheet and name it <strong>GDPR Email Assistant</strong></li>
+      <li>Add a tab called <code>Senders</code> and in Row 1, enter these headers:</li>
+    </ul>
+    <pre>Sender Email | First Detected | Status | Action Taken On | Notes | Domain</pre>
+    <ul>
+      <li>Add a second tab called <code>Instructions</code> for usage steps.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>✅ Step 2: Paste the Script</h2>
+    <ol>
+      <li>Go to <strong>Extensions → Apps Script</strong></li>
+      <li>Delete any starter code</li>
+      <li>Paste in the script provided by ChatGPT (or saved locally)</li>
+      <li>Click <strong>Save</strong></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2>✅ Step 3: First-Time Manual Run</h2>
+    <ul>
+      <li>Run <code>logUniqueSendersToSheet</code></li>
+      <li>Run <code>extractDomains</code></li>
+      <li>Run <code>cleanupDuplicatesByDomain</code></li>
+      <li>Mark rows in the sheet as <strong>Approved</strong>, <strong>Ignore</strong>, or <strong>Removed</strong></li>
+      <li>Run <code>sendGDPRRequests</code> to email approved senders</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>✅ Step 4: Use the Custom Menu</h2>
+    <p>Once the script is run, a new menu will appear in your sheet called <code>GDPR Tools</code>. It will let you run everything with a click:</p>
+    <ul>
+      <li>📥 Scan for new senders</li>
+      <li>🌐 Extract domains</li>
+      <li>🧹 Clean duplicates by domain</li>
+      <li>📬 Send GDPR requests</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>📦 Optional: Enhance or Sell</h2>
+    <ul>
+      <li>Create a <strong>Lite version</strong> (limit senders to 100)</li>
+      <li>Create a <strong>Premium version</strong> with auto-triggers</li>
+      <li>Distribute via <a href="https://gumroad.com">Gumroad</a>, <a href="https://ko-fi.com">Ko-fi</a>, or <a href="https://payhip.com">Payhip</a></li>
+    </ul>
+  </div>
+
+  <footer style="margin-top: 3rem; font-size: 0.9em; color: #888;">
+    Built by Stuart Gibson – GDPR Email Assistant Project – 2025
+  </footer>
+</body>
+</html>
