@@ -1,90 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GDPR Email Assistant – Setup Guide</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GDPR Email Assistant – Setup & Usage Guide</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: system-ui, sans-serif;
+      line-height: 1.6;
       max-width: 800px;
       margin: 2rem auto;
-      padding: 1.5rem;
-      line-height: 1.6;
-      color: #333;
+      padding: 1rem;
+      background: #fefefe;
+      color: #222;
     }
-    h1, h2 {
-      color: #2c3e50;
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+    h2 {
+      margin-top: 2rem;
+      color: #0a558c;
+    }
+    li {
+      margin-bottom: 0.5em;
     }
     code {
-      background: #f4f4f4;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.95em;
+      background: #eee;
+      padding: 2px 5px;
+      border-radius: 3px;
     }
-    .section {
-      margin-bottom: 2rem;
+    pre {
+      background: #f4f4f4;
+      padding: 1em;
+      overflow-x: auto;
+      border-radius: 6px;
+      position: relative;
+    }
+    button.copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 5px 10px;
+      font-size: 0.9em;
+      cursor: pointer;
+    }
+    details summary {
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 1em;
+    }
+    .check {
+      color: green;
+      margin-right: 5px;
     }
   </style>
 </head>
 <body>
   <h1>GDPR Email Assistant – Setup & Usage Guide</h1>
 
-  <div class="section">
-    <h2>✅ Step 1: Create Your Google Sheet</h2>
-    <ul>
-      <li>Open a new Google Sheet and name it <strong>GDPR Email Assistant</strong></li>
-      <li>Add a tab called <code>Senders</code> and in Row 1, enter these headers:</li>
-    </ul>
-    <pre>Sender Email | First Detected | Status | Action Taken On | Notes | Domain</pre>
-    <ul>
-      <li>Add a second tab called <code>Instructions</code> for usage steps.</li>
-    </ul>
-  </div>
+  <h2><span class="check">✅</span> Step 1: Create Your Google Sheet</h2>
+  <ul>
+    <li>Open a new Google Sheet and name it <strong>GDPR Email Assistant</strong></li>
+    <li>Add a tab called <code>Senders</code> and in Row 1, enter these headers:<br />
+      <code>Sender Email</code> | <code>First Detected</code> | <code>Status</code> | <code>Action Taken On</code> | <code>Notes</code> | <code>Domain</code>
+    </li>
+    <li>Add a second tab called <code>Instructions</code> for usage steps.</li>
+  </ul>
 
-  <div class="section">
-    <h2>✅ Step 2: Paste the Script</h2>
-    <ol>
-      <li>Go to <strong>Extensions → Apps Script</strong></li>
-      <li>Delete any starter code</li>
-      <li>Paste in the script provided by ChatGPT (or saved locally)</li>
-      <li>Click <strong>Save</strong></li>
-    </ol>
-  </div>
+  <h2><span class="check">✅</span> Step 2: Paste the Script</h2>
+  <ul>
+    <li>Go to <strong>Extensions → Apps Script</strong></li>
+    <li>Delete any starter code</li>
+    <li>Paste in the script provided below</li>
+    <li>Click <strong>Save</strong></li>
+  </ul>
 
-  <div class="section">
-    <h2>✅ Step 3: First-Time Manual Run</h2>
-    <ul>
-      <li>Run <code>logUniqueSendersToSheet</code></li>
-      <li>Run <code>extractDomains</code></li>
-      <li>Run <code>cleanupDuplicatesByDomain</code></li>
-      <li>Mark rows in the sheet as <strong>Approved</strong>, <strong>Ignore</strong>, or <strong>Removed</strong></li>
-      <li>Run <code>sendGDPRRequests</code> to email approved senders</li>
-    </ul>
-  </div>
+  <details>
+    <summary>📜 Click to View Script (with Copy Button)</summary>
+    <pre><button class="copy-btn" onclick="copyScript()">Copy</button><code id="script">
+function logUniqueSendersToSheet() {
+  const threads = GmailApp.search("newer_than:1y");
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Senders");
+  const data = sheet.getDataRange().getValues().map(row => row[0]);
+  const now = new Date();
 
-  <div class="section">
-    <h2>✅ Step 4: Use the Custom Menu</h2>
-    <p>Once the script is run, a new menu will appear in your sheet called <code>GDPR Tools</code>. It will let you run everything with a click:</p>
-    <ul>
-      <li>📥 Scan for new senders</li>
-      <li>🌐 Extract domains</li>
-      <li>🧹 Clean duplicates by domain</li>
-      <li>📬 Send GDPR requests</li>
-    </ul>
-  </div>
+  threads.forEach(thread => {
+    const sender = thread.getMessages()[0].getFrom();
+    const domain = sender.substring(sender.indexOf("@") + 1).toLowerCase();
+    if (!data.includes(sender)) {
+      sheet.appendRow([sender, now, "Pending", "", "", domain]);
+    }
+  });
+}
 
-  <div class="section">
-    <h2>📦 Optional: Enhance or Sell</h2>
-    <ul>
-      <li>Create a <strong>Lite version</strong> (limit senders to 100)</li>
-      <li>Create a <strong>Premium version</strong> with auto-triggers</li>
-      <li>Distribute via <a href="https://gumroad.com">Gumroad</a>, <a href="https://ko-fi.com">Ko-fi</a>, or <a href="https://payhip.com">Payhip</a></li>
-    </ul>
-  </div>
+function extractDomains() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Senders");
+  const data = sheet.getDataRange().getValues();
 
-  <footer style="margin-top: 3rem; font-size: 0.9em; color: #888;">
-    Built by Stuart Gibson – GDPR Email Assistant Project – 2025
-  </footer>
+  for (let i = 1; i < data.length; i++) {
+    const email = data[i][0];
+    const domain = email.substring(email.indexOf("@") + 1).toLowerCase();
+    sheet.getRange(i + 1, 6).setValue(domain);
+  }
+}
+
+function cleanupDuplicatesByDomain() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Senders");
+  const data = sheet.getDataRange().getValues();
+  const seen = new Set();
+
+  for (let i = 1; i < data.length; i++) {
+    const domain = data[i][5];
+    if (seen.has(domain)) {
+      sheet.deleteRow(i + 1);
+      i--;
+    } else {
+      seen.add(domain);
+    }
+  }
+}
+
+function sendGDPRRequests() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Senders");
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    const status = data[i][2];
+    if (status === "Approved") {
+      const email = data[i][0];
+      GmailApp.sendEmail(email, "GDPR Data Request", 
+        "Under the UK GDPR, I am requesting a copy of all personal data you hold about me and information about how it is processed. Please respond within the statutory period.");
+      sheet.getRange(i + 1, 3).setValue("Sent");
+    }
+  }
+}
+
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu("GDPR Tools")
+    .addItem("Scan for new senders", "logUniqueSendersToSheet")
+    .addItem("Extract domains", "extractDomains")
+    .addItem("Clean duplicates by domain", "cleanupDuplicatesByDomain")
+    .addItem("Send GDPR requests", "sendGDPRRequests")
+    .addToUi();
+}
+</code></pre>
+  </details>
+
+  <h2><span class="check">✅</span> Step 3: First-Time Manual Run</h2>
+  <ul>
+    <li>Run <code>logUniqueSendersToSheet</code></li>
+    <li>Run <code>extractDomains</code></li>
+    <li>Run <code>cleanupDuplicatesByDomain</code></li>
+    <li>Mark rows in the sheet as <strong>Approved</strong>, <strong>Ignore</strong>, or <strong>Removed</strong></li>
+    <li>Run <code>sendGDPRRequests</code> to email approved senders</li>
+  </ul>
+
+  <h2><span class="check">✅</span> Step 4: Use the Custom Menu</h2>
+  <p>
+    Once the script is run, a new menu will appear in your sheet called <code>GDPR Tools</code>.
+    It will let you run everything with a click.
+  </p>
+
+  <script>
+    function copyScript() {
+      const scriptContent = document.getElementById("script").innerText;
+      navigator.clipboard.writeText(scriptContent)
+        .then(() => alert("✅ Script copied to clipboard!"))
+        .catch(() => alert("❌ Failed to copy script."));
+    }
+  </script>
 </body>
 </html>
