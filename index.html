@@ -79,71 +79,110 @@
   <details>
     <summary>📜 Click to View Script (with Copy Button)</summary>
     <pre><button class="copy-btn" onclick="copyScript()">Copy</button><code id="script">
+function sendGDPRRequests() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Senders');
+  const data = sheet.getDataRange().getValues();
+
+  const messageBody = `Dear Data Controller,\n\nUnder Article 17 of the UK GDPR and/or EU GDPR, I formally request the erasure of any and all personal data you hold about me associated with this email address.\n\nI withdraw any consent previously given and request full deletion of my personal information from your systems, mailing lists, and third-party platforms where applicable. Please confirm when this request has been completed.\n\nSincerely,\nStuart Gibson\nstuartgibson1986@gmail.com`;
+
+  for (let i = 1; i < data.length; i++) {
+    const [email, , status, actionDate] = data[i];
+
+    // Process rows where Status is "Approved" and "Action Taken On" is blank
+    if (status.trim() === 'Approved' && actionDate === '') {
+      try {
+        GmailApp.sendEmail(email, "Request for Erasure of Personal Data under GDPR", messageBody, {
+          name: "Stuart Gibson",
+          replyTo: "stuartgibson1986@gmail.com"
+        });
+        
+        // Update the sheet upon success
+        const now = new Date();
+        sheet.getRange(i + 1, 3).setValue("Sent");                 // Status -> "Sent"
+        sheet.getRange(i + 1, 4).setValue(now);                    // Action Taken On -> current date
+        sheet.getRange(i + 1, 5).setValue("✅ Email sent on " + now.toLocaleString()); // Notes
+        Logger.log(`✅ GDPR request sent to: ${email}`);
+        
+      } catch (e) {
+        sheet.getRange(i + 1, 5).setValue(`❌ Error: ${e.message}`); // Notes
+        Logger.log(`❌ Error sending to ${email}: ${e.message}`);
+      }
+    }
+  }
+}
+
 function logUniqueSendersToSheet() {
-  const threads = GmailApp.search("newer_than:1y");
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Senders");
-  const data = sheet.getDataRange().getValues().map(row => row[0]);
-  const now = new Date();
+  const sheetName = 'Senders';
+  const threads = GmailApp.search('in:anywhere newer_than:2y');
+  const senders = new Set();
 
   threads.forEach(thread => {
-    const sender = thread.getMessages()[0].getFrom();
-    const domain = sender.substring(sender.indexOf("@") + 1).toLowerCase();
-    if (!data.includes(sender)) {
-      sheet.appendRow([sender, now, "Pending", "", "", domain]);
-    }
+    thread.getMessages().forEach(message => {
+      const fromField = message.getFrom();
+      const match = fromField.match(/<([^>]+)>/) || fromField.match(/([^ ]+@[^ ]+)/);
+      if (match) {
+        senders.add(match[1].trim().toLowerCase());
+      }
+    });
   });
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    sheet.appendRow(['Sender Email', 'First Detected', 'Status', 'Action Taken On', 'Notes', 'Domain']);
+  }
+
+  const existing = sheet.getRange(2, 1, sheet.getLastRow() - 1 || 1, 1).getValues().flat();
+  const newEntries = Array.from(senders).filter(email => !existing.includes(email));
+
+  newEntries.forEach(email => {
+    sheet.appendRow([email, new Date(), 'Pending', '', '', '']);
+  });
+
+  Logger.log(`✅ Scanned ${threads.length} threads. Added ${newEntries.length} new senders.`);
 }
 
 function extractDomains() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Senders");
-  const data = sheet.getDataRange().getValues();
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Senders');
+  if (sheet.getLastRow() <= 1) return; 
+  const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, 6);
+  const data = range.getValues(); 
 
-  for (let i = 1; i < data.length; i++) {
+  for (let i = 0; i < data.length; i++) {
     const email = data[i][0];
-    const domain = email.substring(email.indexOf("@") + 1).toLowerCase();
-    sheet.getRange(i + 1, 6).setValue(domain);
+    if (email && email.includes('@')) {
+      data[i][5] = email.split('@')[1].trim().toLowerCase(); 
+    }
   }
+  range.setValues(data); 
+  Logger.log('✅ Domains extracted into column F');
 }
 
 function cleanupDuplicatesByDomain() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Senders");
-  const data = sheet.getDataRange().getValues();
-  const seen = new Set();
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Senders');
+  if (sheet.getLastRow() <= 1) return;
+  const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, 6);
+  const data = range.getValues();
 
-  for (let i = 1; i < data.length; i++) {
-    const domain = data[i][5];
-    if (seen.has(domain)) {
-      sheet.deleteRow(i + 1);
-      i--;
+  const seenDomains = new Set();
+
+  for (let i = 0; i < data.length; i++) {
+    const domain = data[i][5]; 
+    const status = data[i][2]; 
+    
+    if (!domain || status === 'Removed') continue;
+
+    if (seenDomains.has(domain)) {
+      data[i][2] = 'Removed'; 
+      data[i][4] = 'Duplicate of domain'; 
     } else {
-      seen.add(domain);
+      seenDomains.add(domain);
     }
   }
-}
-
-function sendGDPRRequests() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Senders");
-  const data = sheet.getDataRange().getValues();
-
-  for (let i = 1; i < data.length; i++) {
-    const status = data[i][2];
-    if (status === "Approved") {
-      const email = data[i][0];
-      GmailApp.sendEmail(email, "GDPR Data Request", 
-        "Under the UK GDPR, I am requesting a copy of all personal data you hold about me and information about how it is processed. Please respond within the statutory period.");
-      sheet.getRange(i + 1, 3).setValue("Sent");
-    }
-  }
-}
-
-function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  ui.createMenu("GDPR Tools")
-    .addItem("Scan for new senders", "logUniqueSendersToSheet")
-    .addItem("Extract domains", "extractDomains")
-    .addItem("Clean duplicates by domain", "cleanupDuplicatesByDomain")
-    .addItem("Send GDPR requests", "sendGDPRRequests")
-    .addToUi();
+  range.setValues(data); 
+  Logger.log('✅ Cleanup complete — one row kept per domain.');
 }
 </code></pre>
   </details>
