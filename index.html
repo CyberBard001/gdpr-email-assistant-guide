@@ -92,10 +92,7 @@
     <li>Go to <a href="https://sheets.new" target="_blank" rel="noopener noreferrer">sheets.new</a> to create a new Google Sheet.</li>
     <li>Name the spreadsheet whatever you like, for example, "GDPR Manager".</li>
   </ul>
-  <div class="note">
-    <strong>Note:</strong> You do not need to create any tabs or headers manually. The script will do this for you the first time it runs.
-  </div>
-
+  
   <h2><span class="step">2</span> Add the Script Code</h2>
   <ul>
     <li>In your new spreadsheet, go to the menu and click <strong>Extensions → Apps Script</strong>.</li>
@@ -246,7 +243,7 @@ function cleanupDuplicatesByDomain() {
 </code></pre>
   </details>
 
-  <h2><span class="step">3</span> Configure the Script Manifest (Critical Step)</h2>
+  <h2><span class="step">3</span> Configure the Script Manifest</h2>
   <ul>
     <li>In the Apps Script editor, click the <strong>Project Settings</strong> icon ⚙️ on the left menu.</li>
     <li>Check the box that says ✅ <strong>Show "appsscript.json" manifest file in editor</strong>.</li>
@@ -273,28 +270,35 @@ function cleanupDuplicatesByDomain() {
     <li>Click the <strong>Save project</strong> icon 💾 to save all changes.</li>
   </ul>
 
-  <h2><span class="step">4</span> The Workflow: How to Use the Tool</h2>
+  <h2><span class="step">4</span> Authorize the Script (Required One-Time Step)</h2>
+  <div class="note">
+    After saving, the code does nothing on its own. You must manually run a function one time to trigger the permission pop-up from Google.
+  </div>
+  <ul>
+      <li>Go back to your Google Sheet. **Refresh the page**.</li>
+      <li>A new custom menu named <strong>GDPR Tools</strong> should appear in the menu bar after a few seconds. (If not, go back to the Apps Script Editor, select the <code>onOpen</code> function, and click Run).</li>
+      <li>Click <strong>GDPR Tools → 1. Find All Senders</strong>.</li>
+      <li>An <strong>"Authorization required"</strong> window will pop up. This is the most important step.</li>
+      <li>Follow all the prompts carefully: Click "Review permissions", choose your account, click "Advanced", click "Go to... (unsafe)", and finally, click **"Allow"** on the last screen to grant the script the permissions it needs.</li>
+  </ul>
+
+
+  <h2><span class="step">5</span> How to Use the Tool (Daily Workflow)</h2>
+  <p>Once the script is authorized, you can use the custom menu for everything.</p>
   <ol>
-    <li><strong>First-Time Authorization:</strong>
+    <li><strong>Populate and Clean Your List:</strong>
       <ul>
-        <li>Go back to your Google Sheet. You may need to refresh the page.</li>
-        <li>A new menu named <strong>GDPR Tools</strong> should appear after a few seconds.</li>
-        <li>Click <strong>GDPR Tools → 1. Find All Senders</strong>.</li>
-        <li>An "Authorization required" window will pop up. Follow all the steps carefully, including clicking "Advanced" and "Allow", to grant the script the necessary permissions. This only needs to be done once.</li>
+        <li>Click <strong>GDPR Tools → 1. Find All Senders</strong> to scan your Gmail and add new contacts to the sheet.</li>
+        <li>Click <strong>GDPR Tools → 2. Extract Domains</strong>.</li>
+        <li>Click <strong>GDPR Tools → 3. Remove Duplicate Domains</strong> to clean up the list.</li>
       </ul>
     </li>
-    <li><strong>Process Your Senders:</strong>
+    <li><strong>Approve and Send Emails:</strong>
       <ul>
-        <li>The script will now populate the "Senders" tab.</li>
-        <li>Run <strong>GDPR Tools → 2. Extract Domains</strong> and then <strong>GDPR Tools → 3. Remove Duplicate Domains</strong> to clean up your list.</li>
-        <li>Manually go through the "Status" column and change "Pending" to <code>Approved</code> for any sender you wish to contact.</li>
-      </ul>
-    </li>
-    <li><strong>Send the Emails:</strong>
-      <ul>
+        <li>In the sheet, manually change the "Status" column from "Pending" to <code>Approved</code> for any sender you wish to contact.</li>
         <li>Click <strong>GDPR Tools → 4. Send GDPR Requests</strong>.</li>
-        <li>The script will send emails to all "Approved" rows and update their status to "Sent". The emails will appear in your Gmail "Sent" folder.</li>
-        <li class="note"><strong>Note on Quotas:</strong> Standard Gmail accounts can send ~100 emails per day with this script. If you hit your limit, the script will stop. Simply run it again the next day to continue where you left off.</li>
+        <li>The script will send the emails (viewable in your Gmail "Sent" folder) and update the status to "Sent".</li>
+        <li>If you hit your daily sending quota, just run this step again the next day.</li>
       </ul>
     </li>
   </ol>
