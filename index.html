@@ -14,7 +14,7 @@
       background: #f9f9f9;
       color: #333;
     }
-    h1, h2 {
+    h1, h2, h3 {
       border-bottom: 2px solid #eee;
       padding-bottom: 10px;
     }
@@ -25,6 +25,12 @@
     h2 {
       margin-top: 2.5rem;
       color: #34495e;
+    }
+    h3 {
+        font-size: 1.2rem;
+        color: #7f8c8d;
+        border-bottom: none;
+        margin-top: 2rem;
     }
     li {
       margin-bottom: 0.75em;
@@ -87,16 +93,38 @@
   <h1>GDPR Email Assistant</h1>
   <p>A complete guide to setting up and using the Google Apps Script to manage GDPR erasure requests directly from a Google Sheet.</p>
 
-  <h2><span class="step">1</span> Create Your Google Sheet</h2>
+  <h2><span class="step">1</span> Create and Prepare Your Google Sheet</h2>
   <ul>
     <li>Go to <a href="https://sheets.new" target="_blank" rel="noopener noreferrer">sheets.new</a> to create a new Google Sheet.</li>
     <li>Name the spreadsheet whatever you like, for example, "GDPR Manager".</li>
   </ul>
   
+  <h3>Add a Status Dropdown Menu (Recommended)</h3>
+    <div class="note">
+    Once the script creates the "Senders" tab and its headers, follow these steps to make changing the status easier.
+    </div>
+  <ol>
+      <li>In the "Senders" sheet, click on the header of **Column C** to select the entire column.</li>
+      <li>From the top menu, click **Data → Data validation**.</li>
+      <li>A sidebar will open on the right. Click **+ Add rule**.</li>
+      <li>For the "Criteria", ensure it is set to **Dropdown**.</li>
+      <li>Enter the following values for the dropdown options:
+          <ul>
+              <li>Option 1: <code>Pending</code></li>
+              <li>Option 2: <code>Approved</code></li>
+              <li>Option 3: <code>Sent</code></li>
+              <li>Option 4: <code>Ignore</code></li>
+              <li>Option 5: <code>Removed</code></li>
+          </ul>
+      </li>
+      <li>You can optionally assign colors to each option to make the sheet easier to read.</li>
+      <li>Click **Done**. Now you will have a neat dropdown menu in every cell in the Status column.</li>
+  </ol>
+
   <h2><span class="step">2</span> Add the Script Code</h2>
   <ul>
-    <li>In your new spreadsheet, go to the menu and click <strong>Extensions → Apps Script</strong>.</li>
-    <li>A new browser tab will open with the script editor. Delete any placeholder code in the <code>Code.gs</code> file.</li>
+    <li>In your spreadsheet, go to the menu and click <strong>Extensions → Apps Script</strong>.</li>
+    <li>Delete any placeholder code in the <code>Code.gs</code> file.</li>
     <li>Copy and paste the entire script below into the empty editor window.</li>
   </ul>
   <details>
@@ -108,12 +136,12 @@
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('GDPR Tools')
-    .addItem('1. Find All Senders', 'logUniqueSendersToSheet')
+    .addItem('1. logUniqueSendersToSheet', 'logUniqueSendersToSheet')
     .addSeparator()
-    .addItem('2. Extract Domains', 'extractDomains')
-    .addItem('3. Remove Duplicate Domains', 'cleanupDuplicatesByDomain')
+    .addItem('2. extractDomains', 'extractDomains')
+    .addItem('3. cleanupDuplicatesByDomain', 'cleanupDuplicatesByDomain')
     .addSeparator()
-    .addItem('4. Send GDPR Requests', 'sendGDPRRequests')
+    .addItem('4. sendGDPRRequests', 'sendGDPRRequests')
     .addToUi();
 }
 
@@ -277,7 +305,7 @@ function cleanupDuplicatesByDomain() {
   <ul>
       <li>Go back to your Google Sheet. **Refresh the page**.</li>
       <li>A new custom menu named <strong>GDPR Tools</strong> should appear in the menu bar after a few seconds. (If not, go back to the Apps Script Editor, select the <code>onOpen</code> function, and click Run).</li>
-      <li>Click <strong>GDPR Tools → 1. Find All Senders</strong>.</li>
+      <li>Click <strong>GDPR Tools → 1. logUniqueSendersToSheet</strong>.</li>
       <li>An <strong>"Authorization required"</strong> window will pop up. This is the most important step.</li>
       <li>Follow all the prompts carefully: Click "Review permissions", choose your account, click "Advanced", click "Go to... (unsafe)", and finally, click **"Allow"** on the last screen to grant the script the permissions it needs.</li>
   </ul>
@@ -288,17 +316,17 @@ function cleanupDuplicatesByDomain() {
   <ol>
     <li><strong>Populate and Clean Your List:</strong>
       <ul>
-        <li>Click <strong>GDPR Tools → 1. Find All Senders</strong> to scan your Gmail and add new contacts to the sheet.</li>
-        <li>Click <strong>GDPR Tools → 2. Extract Domains</strong>.</li>
-        <li>Click <strong>GDPR Tools → 3. Remove Duplicate Domains</strong> to clean up the list.</li>
+        <li>Click <strong>GDPR Tools → 1. logUniqueSendersToSheet</strong> to scan your Gmail and add new contacts to the sheet.</li>
+        <li>Click <strong>GDPR Tools → 2. extractDomains</strong>.</li>
+        <li>Click <strong>GDPR Tools → 3. cleanupDuplicatesByDomain</strong> to clean up the list.</li>
       </ul>
     </li>
     <li><strong>Approve and Send Emails:</strong>
       <ul>
-        <li>In the sheet, manually change the "Status" column from "Pending" to <code>Approved</code> for any sender you wish to contact.</li>
-        <li>Click <strong>GDPR Tools → 4. Send GDPR Requests</strong>.</li>
+        <li>In the sheet, use the dropdown in the "Status" column to change "Pending" to <code>Approved</code> for any sender you wish to contact.</li>
+        <li>Click <strong>GDPR Tools → 4. sendGDPRRequests</strong>.</li>
         <li>The script will send the emails (viewable in your Gmail "Sent" folder) and update the status to "Sent".</li>
-        <li>If you hit your daily sending quota, just run this step again the next day.</li>
+        <li class="note"><strong>Note on Quotas:</strong> Standard Gmail accounts can send ~100 emails per day with this script. If you hit your limit, the script will stop. Simply run it again the next day to continue where you left off.</li>
       </ul>
     </li>
   </ol>
