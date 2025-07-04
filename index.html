@@ -6,89 +6,140 @@
   <title>GDPR Email Assistant – Setup & Usage Guide</title>
   <style>
     body {
-      font-family: system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
       line-height: 1.6;
-      max-width: 800px;
+      max-width: 850px;
       margin: 2rem auto;
       padding: 1rem;
-      background: #fefefe;
-      color: #222;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1, h2 {
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
     }
     h1 {
-      font-size: 1.8rem;
-      margin-bottom: 1rem;
+      font-size: 2rem;
+      color: #2c3e50;
     }
     h2 {
-      margin-top: 2rem;
-      color: #0a558c;
+      margin-top: 2.5rem;
+      color: #34495e;
     }
     li {
-      margin-bottom: 0.5em;
+      margin-bottom: 0.75em;
     }
     code {
-      background: #eee;
-      padding: 2px 5px;
-      border-radius: 3px;
+      background: #e7e9eb;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      font-size: 0.95em;
     }
     pre {
-      background: #f4f4f4;
-      padding: 1em;
+      background: #2d2d2d;
+      color: #f1f1f1;
+      padding: 1.5em;
       overflow-x: auto;
-      border-radius: 6px;
+      border-radius: 8px;
       position: relative;
+      white-space: pre-wrap;
+      word-wrap: break-word;
     }
     button.copy-btn {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      padding: 5px 10px;
+      top: 12px;
+      right: 12px;
+      padding: 6px 12px;
       font-size: 0.9em;
       cursor: pointer;
+      border: 1px solid #555;
+      background: #444;
+      color: #fff;
+      border-radius: 5px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    button.copy-btn:hover {
+      opacity: 1;
     }
     details summary {
       font-weight: bold;
       cursor: pointer;
-      margin-top: 1em;
+      margin-top: 1.5em;
+      font-size: 1.1em;
     }
-    .check {
-      color: green;
-      margin-right: 5px;
+    .step {
+      font-size: 1.5rem;
+      color: #2980b9;
+      margin-right: 10px;
+    }
+    .note {
+        background-color: #eaf5ff;
+        border-left: 5px solid #2980b9;
+        padding: 15px;
+        margin-top: 1em;
+        border-radius: 4px;
     }
   </style>
 </head>
 <body>
-  <h1>GDPR Email Assistant – Setup & Usage Guide</h1>
+  <h1>GDPR Email Assistant</h1>
+  <p>A complete guide to setting up and using the Google Apps Script to manage GDPR erasure requests directly from a Google Sheet.</p>
 
-  <h2><span class="check">✅</span> Step 1: Create Your Google Sheet</h2>
+  <h2><span class="step">1</span> Create Your Google Sheet</h2>
   <ul>
-    <li>Open a new Google Sheet and name it <strong>GDPR Email Assistant</strong></li>
-    <li>Add a tab called <code>Senders</code> and in Row 1, enter these headers:<br />
-      <code>Sender Email</code> | <code>First Detected</code> | <code>Status</code> | <code>Action Taken On</code> | <code>Notes</code> | <code>Domain</code>
-    </li>
-    <li>Add a second tab called <code>Instructions</code> for usage steps.</li>
+    <li>Go to <a href="https://sheets.new" target="_blank" rel="noopener noreferrer">sheets.new</a> to create a new Google Sheet.</li>
+    <li>Name the spreadsheet whatever you like, for example, "GDPR Manager".</li>
   </ul>
+  <div class="note">
+    <strong>Note:</strong> You do not need to create any tabs or headers manually. The script will do this for you the first time it runs.
+  </div>
 
-  <h2><span class="check">✅</span> Step 2: Paste the Script</h2>
+  <h2><span class="step">2</span> Add the Script Code</h2>
   <ul>
-    <li>Go to <strong>Extensions → Apps Script</strong></li>
-    <li>Delete any starter code</li>
-    <li>Paste in the script provided below</li>
-    <li>Click <strong>Save</strong></li>
+    <li>In your new spreadsheet, go to the menu and click <strong>Extensions → Apps Script</strong>.</li>
+    <li>A new browser tab will open with the script editor. Delete any placeholder code in the <code>Code.gs</code> file.</li>
+    <li>Copy and paste the entire script below into the empty editor window.</li>
   </ul>
-
   <details>
-    <summary>📜 Click to View Script (with Copy Button)</summary>
-    <pre><button class="copy-btn" onclick="copyScript()">Copy</button><code id="script">
+    <summary>📜 Click to View Full `Code.gs` Script</summary>
+    <pre><button class="copy-btn" onclick="copyCode()">Copy Script</button><code id="script-code">
+/**
+ * Creates a custom menu in the Google Sheet UI to run GDPR tools.
+ */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('GDPR Tools')
+    .addItem('1. Find All Senders', 'logUniqueSendersToSheet')
+    .addSeparator()
+    .addItem('2. Extract Domains', 'extractDomains')
+    .addItem('3. Remove Duplicate Domains', 'cleanupDuplicatesByDomain')
+    .addSeparator()
+    .addItem('4. Send GDPR Requests', 'sendGDPRRequests')
+    .addToUi();
+}
+
+/**
+ * Sends GDPR erasure requests to contacts marked as "Approved".
+ */
 function sendGDPRRequests() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Senders');
   const data = sheet.getDataRange().getValues();
 
-  const messageBody = `Dear Data Controller,\n\nUnder Article 17 of the UK GDPR and/or EU GDPR, I formally request the erasure of any and all personal data you hold about me associated with this email address.\n\nI withdraw any consent previously given and request full deletion of my personal information from your systems, mailing lists, and third-party platforms where applicable. Please confirm when this request has been completed.\n\nSincerely,\nStuart Gibson\nstuartgibson1986@gmail.com`;
+  const messageBody = `Dear Data Controller,
 
-  for (let i = 1; i < data.length; i++) {
+Under Article 17 of the UK GDPR and/or EU GDPR, I formally request the erasure of any and all personal data you hold about me associated with this email address.
+
+I withdraw any consent previously given and request full deletion of my personal information from your systems, mailing lists, and third-party platforms where applicable. Please confirm when this request has been completed.
+
+Sincerely,
+Stuart Gibson
+stuartgibson1986@gmail.com`;
+
+  for (let i = 1; i &lt; data.length; i++) {
     const [email, , status, actionDate] = data[i];
 
-    // Process rows where Status is "Approved" and "Action Taken On" is blank
     if (status.trim() === 'Approved' && actionDate === '') {
       try {
         GmailApp.sendEmail(email, "Request for Erasure of Personal Data under GDPR", messageBody, {
@@ -96,21 +147,23 @@ function sendGDPRRequests() {
           replyTo: "stuartgibson1986@gmail.com"
         });
         
-        // Update the sheet upon success
         const now = new Date();
-        sheet.getRange(i + 1, 3).setValue("Sent");                 // Status -> "Sent"
-        sheet.getRange(i + 1, 4).setValue(now);                    // Action Taken On -> current date
-        sheet.getRange(i + 1, 5).setValue("✅ Email sent on " + now.toLocaleString()); // Notes
+        sheet.getRange(i + 1, 3).setValue("Sent");
+        sheet.getRange(i + 1, 4).setValue(now);
+        sheet.getRange(i + 1, 5).setValue("✅ Email sent on " + now.toLocaleString());
         Logger.log(`✅ GDPR request sent to: ${email}`);
         
       } catch (e) {
-        sheet.getRange(i + 1, 5).setValue(`❌ Error: ${e.message}`); // Notes
+        sheet.getRange(i + 1, 5).setValue(`❌ Error: ${e.message}`);
         Logger.log(`❌ Error sending to ${email}: ${e.message}`);
       }
     }
   }
 }
 
+/**
+ * Scans Gmail for unique senders and logs them to the "Senders" sheet.
+ */
 function logUniqueSendersToSheet() {
   const sheetName = 'Senders';
   const threads = GmailApp.search('in:anywhere newer_than:2y');
@@ -119,7 +172,7 @@ function logUniqueSendersToSheet() {
   threads.forEach(thread => {
     thread.getMessages().forEach(message => {
       const fromField = message.getFrom();
-      const match = fromField.match(/<([^>]+)>/) || fromField.match(/([^ ]+@[^ ]+)/);
+      const match = fromField.match(/&lt;([^&gt;]+)&gt;/) || fromField.match(/([^ ]+@[^ ]+)/);
       if (match) {
         senders.add(match[1].trim().toLowerCase());
       }
@@ -144,70 +197,122 @@ function logUniqueSendersToSheet() {
   Logger.log(`✅ Scanned ${threads.length} threads. Added ${newEntries.length} new senders.`);
 }
 
+/**
+ * Extracts domains from email addresses into Column F.
+ */
 function extractDomains() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Senders');
-  if (sheet.getLastRow() <= 1) return; 
+  if (sheet.getLastRow() &lt;= 1) return;
   const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, 6);
   const data = range.getValues(); 
 
-  for (let i = 0; i < data.length; i++) {
+  for (let i = 0; i &lt; data.length; i++) {
     const email = data[i][0];
     if (email && email.includes('@')) {
-      data[i][5] = email.split('@')[1].trim().toLowerCase(); 
+      data[i][5] = email.split('@')[1].trim().toLowerCase();
     }
   }
-  range.setValues(data); 
+  range.setValues(data);
   Logger.log('✅ Domains extracted into column F');
 }
 
+/**
+ * Marks duplicate entries based on the domain as "Removed".
+ */
 function cleanupDuplicatesByDomain() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Senders');
-  if (sheet.getLastRow() <= 1) return;
+  if (sheet.getLastRow() &lt;= 1) return;
   const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, 6);
   const data = range.getValues();
 
   const seenDomains = new Set();
 
-  for (let i = 0; i < data.length; i++) {
-    const domain = data[i][5]; 
-    const status = data[i][2]; 
+  for (let i = 0; i &lt; data.length; i++) {
+    const domain = data[i][5];
+    const status = data[i][2];
     
     if (!domain || status === 'Removed') continue;
 
     if (seenDomains.has(domain)) {
-      data[i][2] = 'Removed'; 
-      data[i][4] = 'Duplicate of domain'; 
+      data[i][2] = 'Removed';
+      data[i][4] = 'Duplicate of domain';
     } else {
       seenDomains.add(domain);
     }
   }
-  range.setValues(data); 
+  range.setValues(data);
   Logger.log('✅ Cleanup complete — one row kept per domain.');
 }
 </code></pre>
   </details>
 
-  <h2><span class="check">✅</span> Step 3: First-Time Manual Run</h2>
+  <h2><span class="step">3</span> Configure the Script Manifest (Critical Step)</h2>
   <ul>
-    <li>Run <code>logUniqueSendersToSheet</code></li>
-    <li>Run <code>extractDomains</code></li>
-    <li>Run <code>cleanupDuplicatesByDomain</code></li>
-    <li>Mark rows in the sheet as <strong>Approved</strong>, <strong>Ignore</strong>, or <strong>Removed</strong></li>
-    <li>Run <code>sendGDPRRequests</code> to email approved senders</li>
+    <li>In the Apps Script editor, click the <strong>Project Settings</strong> icon ⚙️ on the left menu.</li>
+    <li>Check the box that says ✅ <strong>Show "appsscript.json" manifest file in editor</strong>.</li>
+    <li>Click the <strong>Editor</strong> icon &lt; &gt; to return to your code. You will see a new <code>appsscript.json</code> file.</li>
+    <li>Click to open the <code>appsscript.json</code> file, delete all of its content, and paste in the code below.</li>
+  </ul>
+   <details>
+    <summary>📜 Click to View `appsscript.json` Code</summary>
+    <pre><button class="copy-btn" onclick="copyJson()">Copy JSON</button><code id="script-json">
+{
+  "timeZone": "Europe/London",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/script.container.ui",
+    "https://www.googleapis.com/auth/gmail.modify"
+  ]
+}
+</code></pre>
+  </details>
+  <ul>
+    <li>Click the <strong>Save project</strong> icon 💾 to save all changes.</li>
   </ul>
 
-  <h2><span class="check">✅</span> Step 4: Use the Custom Menu</h2>
-  <p>
-    Once the script is run, a new menu will appear in your sheet called <code>GDPR Tools</code>.
-    It will let you run everything with a click.
-  </p>
+  <h2><span class="step">4</span> The Workflow: How to Use the Tool</h2>
+  <ol>
+    <li><strong>First-Time Authorization:</strong>
+      <ul>
+        <li>Go back to your Google Sheet. You may need to refresh the page.</li>
+        <li>A new menu named <strong>GDPR Tools</strong> should appear after a few seconds.</li>
+        <li>Click <strong>GDPR Tools → 1. Find All Senders</strong>.</li>
+        <li>An "Authorization required" window will pop up. Follow all the steps carefully, including clicking "Advanced" and "Allow", to grant the script the necessary permissions. This only needs to be done once.</li>
+      </ul>
+    </li>
+    <li><strong>Process Your Senders:</strong>
+      <ul>
+        <li>The script will now populate the "Senders" tab.</li>
+        <li>Run <strong>GDPR Tools → 2. Extract Domains</strong> and then <strong>GDPR Tools → 3. Remove Duplicate Domains</strong> to clean up your list.</li>
+        <li>Manually go through the "Status" column and change "Pending" to <code>Approved</code> for any sender you wish to contact.</li>
+      </ul>
+    </li>
+    <li><strong>Send the Emails:</strong>
+      <ul>
+        <li>Click <strong>GDPR Tools → 4. Send GDPR Requests</strong>.</li>
+        <li>The script will send emails to all "Approved" rows and update their status to "Sent". The emails will appear in your Gmail "Sent" folder.</li>
+        <li class="note"><strong>Note on Quotas:</strong> Standard Gmail accounts can send ~100 emails per day with this script. If you hit your limit, the script will stop. Simply run it again the next day to continue where you left off.</li>
+      </ul>
+    </li>
+  </ol>
 
   <script>
-    function copyScript() {
-      const scriptContent = document.getElementById("script").innerText;
-      navigator.clipboard.writeText(scriptContent)
-        .then(() => alert("✅ Script copied to clipboard!"))
-        .catch(() => alert("❌ Failed to copy script."));
+    function copyToClipboard(elementId, type) {
+      const content = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(content)
+        .then(() => alert(`✅ ${type} copied to clipboard!`))
+        .catch(() => alert(`❌ Failed to copy ${type}.`));
+    }
+
+    function copyCode() {
+      copyToClipboard("script-code", "Script");
+    }
+    
+    function copyJson() {
+        copyToClipboard("script-json", "JSON");
     }
   </script>
 </body>
